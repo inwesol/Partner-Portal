@@ -1,18 +1,18 @@
 "use client"
 import { useState, useEffect } from 'react';
-import { Edit, ChevronRight, User, Mail, Briefcase, Phone, MapPin, Calendar, Users, Building, Save, X } from 'lucide-react';
+import { Edit, ChevronRight, User, Mail, Briefcase, Phone, MapPin, Calendar, Users, Building, Save, X, Award } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 
 // Type definitions
-interface Person {
+interface Coach {
   id: number;
   name?: string;
   [key: string]: any;
 }
 
 interface ExtendedBreadcrumbProps {
-  person: Person | null;
+  coach: Coach | null;
   onDashboardClick: () => void;
 }
 
@@ -43,7 +43,7 @@ interface CardContentProps {
   className?: string;
 }
 
-interface PersonDetailsPageProps {
+interface CoachDetailsPageProps {
   params: {
     id: string;
   };
@@ -52,13 +52,13 @@ interface PersonDetailsPageProps {
 interface CategorizedData {
   personal: Record<string, any>;
   professional: Record<string, any>;
-  family: Record<string, any>;
-  education: Record<string, any>;
+  contact: Record<string, any>;
+  qualifications: Record<string, any>;
   other: Record<string, any>;
 }
 
 // Extended Breadcrumb component
-const ExtendedBreadcrumb = ({ person, onDashboardClick }: ExtendedBreadcrumbProps) => (
+const ExtendedBreadcrumb = ({ coach, onDashboardClick }: ExtendedBreadcrumbProps) => (
   <div className=" px-4 py-3">
     <div className="max-w-7xl mx-auto">
       <nav className="flex items-center space-x-2 text-sm">
@@ -77,7 +77,7 @@ const ExtendedBreadcrumb = ({ person, onDashboardClick }: ExtendedBreadcrumbProp
         </button>
         <ChevronRight className="w-4 h-4 text-gray-400" />
         <span className="text-gray-600">
-          {person ? person.name || `Person #${person.id}` : 'Loading...'}
+          {coach ? coach.name || `Coach #${coach.id}` : 'Loading...'}
         </span>
       </nav>
     </div>
@@ -125,155 +125,150 @@ const CardContent = ({ children, className = "" }: CardContentProps) => (
   </div>
 );
 
-export default function PersonDetailsPage({ params }: PersonDetailsPageProps) {
+export default function CoachDetailsPage({ params }: CoachDetailsPageProps) {
   const router = useRouter();
   const { user, isLoaded } = useUser();
   
-  const [person, setPerson] = useState<Person | null>(null);
-  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
+  const [coach, setCoach] = useState<Coach | null>(null);
+  const [editingCoach, setEditingCoach] = useState<Coach | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("personal");
   
-  // Get the person ID from the URL parameters
-  const personId = params?.id;
+  // Get the coach ID from the URL parameters
+  const coachId = params?.id;
   
-  // Get user-specific localStorage key
+  // Get user-specific localStorage key for coaches
   const getUserStorageKey = (): string | null => {
     if (!user?.id) return null;
-    return `peopleData_${user.id}`;
+    return `coachData_${user.id}`;
   };
   
-  // Load person data from user-specific localStorage on initial mount
+  // Load coach data from user-specific localStorage on initial mount
   useEffect(() => {
-    const loadPersonData = () => {
+    const loadCoachData = () => {
       setLoading(true);
       try {
         if (user?.id) {
           const storageKey = getUserStorageKey();
           if (storageKey) {
-            const storedPeople = localStorage.getItem(storageKey);
-            if (storedPeople) {
-              const people: Person[] = JSON.parse(storedPeople);
-              const foundPerson = people.find(p => p.id === parseInt(personId));
+            const storedCoaches = localStorage.getItem(storageKey);
+            if (storedCoaches) {
+              const coaches: Coach[] = JSON.parse(storedCoaches);
+              const foundCoach = coaches.find(c => c.id === parseInt(coachId));
               
-              if (foundPerson) {
-                setPerson(foundPerson);
+              if (foundCoach) {
+                setCoach(foundCoach);
               } else {
-                // Person not found
-                console.error("Person not found with ID:", personId);
+                // Coach not found
+                console.error("Coach not found with ID:", coachId);
               }
             }
           }
         }
       } catch (error) {
-        console.error("Error loading person data:", error);
+        console.error("Error loading coach data:", error);
       } finally {
         setLoading(false);
       }
     };
     
-    if (personId && isLoaded) {
-      loadPersonData();
+    if (coachId && isLoaded) {
+      loadCoachData();
     }
-  }, [personId, user?.id, isLoaded]);
+  }, [coachId, user?.id, isLoaded]);
   
-  // Function to go back to the dashboard
+  // Function to go back to the coach manager
   const handleGoBack = () => {
     router.push('/');
   };
   
   // Function to handle editing
-  const handleEditPerson = () => {
-    if (person) {
-      setEditingPerson({ ...person }); // Create a copy for editing
+  const handleEditCoach = () => {
+    if (coach) {
+      setEditingCoach({ ...coach }); // Create a copy for editing
       setIsEditing(true);
     }
   };
   
   // Function to handle saving edits
   const handleSaveEdit = () => {
-    if (!editingPerson || !user?.id) return;
+    if (!editingCoach || !user?.id) return;
     
     try {
       const storageKey = getUserStorageKey();
       if (storageKey) {
-        const storedPeople = localStorage.getItem(storageKey);
-        if (storedPeople) {
-          const people: Person[] = JSON.parse(storedPeople);
-          const updatedPeople = people.map(p => 
-            p.id === editingPerson.id ? editingPerson : p
+        const storedCoaches = localStorage.getItem(storageKey);
+        if (storedCoaches) {
+          const coaches: Coach[] = JSON.parse(storedCoaches);
+          const updatedCoaches = coaches.map(c => 
+            c.id === editingCoach.id ? editingCoach : c
           );
-          localStorage.setItem(storageKey, JSON.stringify(updatedPeople));
-          setPerson(editingPerson);
+          localStorage.setItem(storageKey, JSON.stringify(updatedCoaches));
+          setCoach(editingCoach);
           setIsEditing(false);
-          setEditingPerson(null);
+          setEditingCoach(null);
         }
       }
     } catch (error) {
-      console.error("Error saving person data:", error);
+      console.error("Error saving coach data:", error);
     }
   };
   
   // Function to handle canceling edit
   const handleCancelEdit = () => {
     setIsEditing(false);
-    setEditingPerson(null);
+    setEditingCoach(null);
   };
   
   // Function to handle input changes
   const handleInputChange = (key: string, value: string) => {
-    if (editingPerson) {
-      setEditingPerson({
-        ...editingPerson,
+    if (editingCoach) {
+      setEditingCoach({
+        ...editingCoach,
         [key]: value
       });
     }
   };
   
-  // Categorize person properties
-  const categorizeProperties = (person: Person): CategorizedData => {
-    if (!person) return {
+  // Categorize coach properties
+  const categorizeProperties = (coach: Coach): CategorizedData => {
+    if (!coach) return {
       personal: {},
       professional: {},
-      family: {},
-      education: {},
+      contact: {},
+      qualifications: {},
       other: {}
     };
     
-    // Define categories with normalized keys to prevent duplicates
+    // Define categories with normalized keys for coaches
     const categoryMappings = {
       personal: {
         'name': ['name'],
-        'email': ['email'],
-        'phone': ['phone', 'mobile', 'contactnumber', 'contact number'],
-        'dateOfBirth': ['dateofbirth', 'date of birth'],
+        'dateOfBirth': ['dateofbirth', 'date of birth', 'dob'],
         'gender': ['gender'],
         'address': ['address']
       },
       professional: {
         'role': ['role', 'position', 'title', 'jobtitle'],
+        'specialization': ['specialization', 'sport', 'specialty'],
+        'experience': ['experience', 'years of experience'],
         'department': ['department'],
-        'company': ['company'],
-        'experience': ['experience'],
-        'skills': ['skills']
+        'level': ['level', 'coaching level']
       },
-      family: {
-        'parentName': ['parentname', 'parent name'],
-        'parentContact': ['parentcontact', 'parent contact'],
-        'spouse': ['spouse'],
-        'children': ['children'],
-        'familyMembers': ['familymembers', 'family members'],
-        'guardian': ['guardian']
+      contact: {
+        'email': ['email', 'email address'],
+        'phone': ['phone', 'mobile', 'contactnumber', 'contact number'],
+        'emergencyContact': ['emergencycontact', 'emergency contact'],
+        'emergencyPhone': ['emergencyphone', 'emergency phone']
       },
-      education: {
+      qualifications: {
+        'certification': ['certification', 'certifications'],
         'education': ['education'],
         'degree': ['degree'],
-        'school': ['school'],
-        'college': ['college'],
-        'university': ['university'],
-        'graduation': ['graduation'],
-        'qualifications': ['qualifications']
+        'training': ['training'],
+        'qualifications': ['qualifications'],
+        'licenses': ['licenses', 'license']
       }
     };
     
@@ -281,8 +276,8 @@ export default function PersonDetailsPage({ params }: PersonDetailsPageProps) {
     const categorized: CategorizedData = {
       personal: {},
       professional: {},
-      family: {},
-      education: {},
+      contact: {},
+      qualifications: {},
       other: {}
     };
     
@@ -290,7 +285,7 @@ export default function PersonDetailsPage({ params }: PersonDetailsPageProps) {
     const processedKeys = new Set<string>();
     
     // Categorize each property
-    Object.entries(person).forEach(([key, value]) => {
+    Object.entries(coach).forEach(([key, value]) => {
       // Skip ID and already processed keys
       if (key === 'id' || processedKeys.has(key.toLowerCase())) return;
       
@@ -351,27 +346,27 @@ export default function PersonDetailsPage({ params }: PersonDetailsPageProps) {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center bg-white p-8 rounded-lg shadow-sm border border-gray-200">
           <h2 className="text-xl font-bold text-gray-900 mb-2">Authentication Required</h2>
-          <p className="text-gray-600">Please sign in to view person details.</p>
+          <p className="text-gray-600">Please sign in to view coach details.</p>
         </div>
       </div>
     );
   }
   
-  // Show error if person not found
-  if (!person) {
+  // Show error if coach not found
+  if (!coach) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center bg-white p-8 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Person Not Found</h2>
-          <p className="text-gray-600">The person you're looking for doesn't exist or has been deleted.</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Coach Not Found</h2>
+          <p className="text-gray-600">The coach you're looking for doesn't exist or has been deleted.</p>
         </div>
       </div>
     );
   }
   
-  // Use editingPerson data when in edit mode, otherwise use person data
-  const displayPerson = isEditing ? editingPerson : person;
-  const categorizedData = categorizeProperties(displayPerson || person);
+  // Use editingCoach data when in edit mode, otherwise use coach data
+  const displayCoach = isEditing ? editingCoach : coach;
+  const categorizedData = categorizeProperties(displayCoach || coach);
   
   // Hide empty categories
   const nonEmptyCategories = Object.entries(categorizedData)
@@ -382,8 +377,8 @@ export default function PersonDetailsPage({ params }: PersonDetailsPageProps) {
     switch(category) {
       case 'personal': return 'Personal Information';
       case 'professional': return 'Professional Details';
-      case 'family': return 'Family Information';
-      case 'education': return 'Education Background';
+      case 'contact': return 'Contact Information';
+      case 'qualifications': return 'Qualifications & Certifications';
       default: return 'Other Information';
     }
   };
@@ -393,12 +388,13 @@ export default function PersonDetailsPage({ params }: PersonDetailsPageProps) {
     const fieldLower = field.toLowerCase();
     if (fieldLower.includes('email')) return <Mail className="w-4 h-4 text-[#3FA1D8]" />;
     if (fieldLower.includes('name')) return <User className="w-4 h-4 text-[#3FA1D8]" />;
-    if (fieldLower.includes('role') || fieldLower.includes('department')) return <Briefcase className="w-4 h-4 text-[#3FA1D8]" />;
+    if (fieldLower.includes('role') || fieldLower.includes('position') || fieldLower.includes('specialization')) return <Briefcase className="w-4 h-4 text-[#3FA1D8]" />;
     if (fieldLower.includes('phone') || fieldLower.includes('contact')) return <Phone className="w-4 h-4 text-[#3FA1D8]" />;
     if (fieldLower.includes('address')) return <MapPin className="w-4 h-4 text-[#3FA1D8]" />;
     if (fieldLower.includes('date') || fieldLower.includes('birth')) return <Calendar className="w-4 h-4 text-[#3FA1D8]" />;
-    if (fieldLower.includes('family') || fieldLower.includes('parent') || fieldLower.includes('spouse')) return <Users className="w-4 h-4 text-[#3FA1D8]" />;
-    if (fieldLower.includes('company') || fieldLower.includes('department')) return <Building className="w-4 h-4 text-[#3FA1D8]" />;
+    if (fieldLower.includes('emergency')) return <Users className="w-4 h-4 text-[#3FA1D8]" />;
+    if (fieldLower.includes('department') || fieldLower.includes('level')) return <Building className="w-4 h-4 text-[#3FA1D8]" />;
+    if (fieldLower.includes('certification') || fieldLower.includes('qualification') || fieldLower.includes('education') || fieldLower.includes('training')) return <Award className="w-4 h-4 text-[#3FA1D8]" />;
     return null;
   };
   
@@ -412,23 +408,18 @@ export default function PersonDetailsPage({ params }: PersonDetailsPageProps) {
       'gender': 'Gender',
       'address': 'Address',
       'role': 'Role/Position',
-      'department': 'Department',
-      'company': 'Company',
+      'specialization': 'Specialization',
       'experience': 'Experience',
-      'skills': 'Skills',
-      'parentName': 'Parent Name',
-      'parentContact': 'Parent Contact',
-      'spouse': 'Spouse',
-      'children': 'Children',
-      'familyMembers': 'Family Members',
-      'guardian': 'Guardian',
+      'department': 'Department',
+      'level': 'Coaching Level',
+      'emergencyContact': 'Emergency Contact',
+      'emergencyPhone': 'Emergency Phone',
+      'certification': 'Certifications',
       'education': 'Education',
       'degree': 'Degree',
-      'school': 'School',
-      'college': 'College',
-      'university': 'University',
-      'graduation': 'Graduation',
-      'qualifications': 'Qualifications'
+      'training': 'Training',
+      'qualifications': 'Qualifications',
+      'licenses': 'Licenses'
     };
     
     return displayNames[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
@@ -436,11 +427,11 @@ export default function PersonDetailsPage({ params }: PersonDetailsPageProps) {
   
   // Find the original key for a normalized key
   const findOriginalKey = (normalizedKey: string, category: keyof CategorizedData): string => {
-    const originalPerson = isEditing ? person : displayPerson;
-    if (!originalPerson) return normalizedKey;
+    const originalCoach = isEditing ? coach : displayCoach;
+    if (!originalCoach) return normalizedKey;
     
-    // Look for the actual key in the original person object
-    const possibleKeys = Object.keys(originalPerson).filter(key => {
+    // Look for the actual key in the original coach object
+    const possibleKeys = Object.keys(originalCoach).filter(key => {
       const keyLower = key.toLowerCase();
       const normalizedLower = normalizedKey.toLowerCase();
       return keyLower === normalizedLower || 
@@ -455,13 +446,13 @@ export default function PersonDetailsPage({ params }: PersonDetailsPageProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Extended Breadcrumb Navigation */}
-      <ExtendedBreadcrumb person={person} onDashboardClick={handleGoBack} />
+      <ExtendedBreadcrumb coach={coach} onDashboardClick={handleGoBack} />
       
       <div className="w-full mx-auto px-4 py-6">
         {/* Header with edit/save/cancel buttons */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-gray-900">
-            {isEditing ? 'Edit Person Details' : 'Person Details'}
+            {isEditing ? 'Edit Coach Details' : 'Coach Details'}
           </h1>
           <div className="flex gap-2">
             {isEditing ? (
@@ -483,7 +474,7 @@ export default function PersonDetailsPage({ params }: PersonDetailsPageProps) {
               </>
             ) : (
               <button
-                onClick={handleEditPerson}
+                onClick={handleEditCoach}
                 className="inline-flex items-center px-4 py-2 bg-[#00B24B] text-white rounded-lg hover:bg-[#009640] transition-colors font-medium shadow-sm"
               >
                 <Edit className="w-4 h-4 mr-2" />
@@ -533,7 +524,7 @@ export default function PersonDetailsPage({ params }: PersonDetailsPageProps) {
                           {isEditing ? (
                             <input
                               type="text"
-                              value={editingPerson?.[originalKey]?.toString() || ''}
+                              value={editingCoach?.[originalKey]?.toString() || ''}
                               onChange={(e) => handleInputChange(originalKey, e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00B24B] focus:border-transparent"
                               placeholder={`Enter ${getDisplayName(key).toLowerCase()}`}
