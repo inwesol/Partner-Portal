@@ -1,71 +1,169 @@
 "use client"
 import { useState, useEffect } from 'react';
-import { Edit, ArrowLeft, User, Mail, Briefcase, Phone, MapPin, Calendar, Users, Building } from 'lucide-react';
+import { Edit, ChevronRight, User, Mail, Briefcase, Phone, MapPin, Calendar, Users, Building, Save, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
+
+// Type definitions
+interface Person {
+  id: number;
+  name?: string;
+  [key: string]: any;
+}
+
+interface ExtendedBreadcrumbProps {
+  person: Person | null;
+  onDashboardClick: () => void;
+}
+
+interface TabsListProps {
+  children: React.ReactNode;
+}
+
+interface TabsTriggerProps {
+  value: string;
+  active: boolean;
+  onClick: (value: string) => void;
+  children: React.ReactNode;
+}
+
+interface TabsContentProps {
+  value: string;
+  activeTab: string;
+  children: React.ReactNode;
+}
+
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+interface CardContentProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+interface PersonDetailsPageProps {
+  params: {
+    id: string;
+  };
+}
+
+interface CategorizedData {
+  personal: Record<string, any>;
+  professional: Record<string, any>;
+  family: Record<string, any>;
+  education: Record<string, any>;
+  other: Record<string, any>;
+}
+
+// Extended Breadcrumb component
+const ExtendedBreadcrumb = ({ person, onDashboardClick }: ExtendedBreadcrumbProps) => (
+  <div className=" px-4 py-3">
+    <div className="max-w-7xl mx-auto">
+      <nav className="flex items-center space-x-2 text-sm">
+        <button 
+          onClick={onDashboardClick}
+          className="hover:underline"
+        >
+          Partner Portal
+        </button>
+        <ChevronRight className="w-4 h-4 text-gray-400" />
+        <button 
+          onClick={onDashboardClick}
+          className="hover:underline"
+        >
+          Dashboard
+        </button>
+        <ChevronRight className="w-4 h-4 text-gray-400" />
+        <span className="text-gray-600">
+          {person ? person.name || `Person #${person.id}` : 'Loading...'}
+        </span>
+      </nav>
+    </div>
+  </div>
+);
 
 // Tab component
-const TabsList = ({ children }) => (
-  <div className="overflow-x-auto scrollbar-hide md:overflow-visible pb-1 border-b border-gray-200 mb-8">
-    <div className="flex md:w-auto justify-start">
+const TabsList = ({ children }: TabsListProps) => (
+  <div className="border-b border-gray-200 bg-white">
+    <div className="flex overflow-x-auto">
       {children}
     </div>
   </div>
 );
 
-const TabsTrigger = ({ value, active, onClick, children }) => (
+const TabsTrigger = ({ value, active, onClick, children }: TabsTriggerProps) => (
   <button
     onClick={() => onClick(value)}
-    className={`px-4 py-3 text-sm md:text-base font-semibold whitespace-nowrap border-b-2 ${
-      active ? "text-green-500 border-green-500" : "border-transparent"
+    className={`px-6 py-4 text-sm md:text-base font-semibold whitespace-nowrap border-b-2 transition-colors ${
+      active 
+        ? "text-[#00B24B] border-[#00B24B] bg-green-50" 
+        : "text-gray-600 border-transparent hover:text-[#00B24B] hover:border-gray-300"
     }`}
   >
     {children}
   </button>
 );
 
-const TabsContent = ({ value, activeTab, children }) => (
-  <div className={value === activeTab ? "block" : "hidden"}>
+const TabsContent = ({ value, activeTab, children }: TabsContentProps) => (
+  <div className={activeTab === value ? "block" : "hidden"}>
     {children}
   </div>
 );
 
 // Card components
-const Card = ({ children, className = "" }) => (
-  <div className={`border border-gray-200 hover:shadow-md transition-shadow rounded-xl ${className}`}>
+const Card = ({ children, className = "" }: CardProps) => (
+  <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`}>
     {children}
   </div>
 );
 
-const CardContent = ({ children, className = "" }) => (
+const CardContent = ({ children, className = "" }: CardContentProps) => (
   <div className={`p-6 ${className}`}>
     {children}
   </div>
 );
 
-export default function PersonDetailsPage({ params }) {
+export default function PersonDetailsPage({ params }: PersonDetailsPageProps) {
   const router = useRouter();
-  const [person, setPerson] = useState(null);
+  const { user, isLoaded } = useUser();
+  
+  const [person, setPerson] = useState<Person | null>(null);
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("personal");
   
   // Get the person ID from the URL parameters
   const personId = params?.id;
   
-  // Load person data from localStorage on initial mount
+  // Get user-specific localStorage key
+  const getUserStorageKey = (): string | null => {
+    if (!user?.id) return null;
+    return `peopleData_${user.id}`;
+  };
+  
+  // Load person data from user-specific localStorage on initial mount
   useEffect(() => {
     const loadPersonData = () => {
       setLoading(true);
       try {
-        const storedPeople = localStorage.getItem('peopleData');
-        if (storedPeople) {
-          const people = JSON.parse(storedPeople);
-          const foundPerson = people.find(p => p.id === parseInt(personId));
-          
-          if (foundPerson) {
-            setPerson(foundPerson);
-          } else {
-            // Person not found
-            console.error("Person not found with ID:", personId);
+        if (user?.id) {
+          const storageKey = getUserStorageKey();
+          if (storageKey) {
+            const storedPeople = localStorage.getItem(storageKey);
+            if (storedPeople) {
+              const people: Person[] = JSON.parse(storedPeople);
+              const foundPerson = people.find(p => p.id === parseInt(personId));
+              
+              if (foundPerson) {
+                setPerson(foundPerson);
+              } else {
+                // Person not found
+                console.error("Person not found with ID:", personId);
+              }
+            }
           }
         }
       } catch (error) {
@@ -75,27 +173,73 @@ export default function PersonDetailsPage({ params }) {
       }
     };
     
-    if (personId) {
+    if (personId && isLoaded) {
       loadPersonData();
     }
-  }, [personId]);
+  }, [personId, user?.id, isLoaded]);
   
-  // Function to go back to the people list
+  // Function to go back to the dashboard
   const handleGoBack = () => {
-    router.back();
+    router.push('/');
   };
   
   // Function to handle editing
   const handleEditPerson = () => {
-    // Store the editing person in localStorage for state persistence
-    localStorage.setItem('editingPerson', JSON.stringify(person));
-    // Go to the main page where editing will be handled
-    router.push('/?edit=' + personId);
+    if (person) {
+      setEditingPerson({ ...person }); // Create a copy for editing
+      setIsEditing(true);
+    }
+  };
+  
+  // Function to handle saving edits
+  const handleSaveEdit = () => {
+    if (!editingPerson || !user?.id) return;
+    
+    try {
+      const storageKey = getUserStorageKey();
+      if (storageKey) {
+        const storedPeople = localStorage.getItem(storageKey);
+        if (storedPeople) {
+          const people: Person[] = JSON.parse(storedPeople);
+          const updatedPeople = people.map(p => 
+            p.id === editingPerson.id ? editingPerson : p
+          );
+          localStorage.setItem(storageKey, JSON.stringify(updatedPeople));
+          setPerson(editingPerson);
+          setIsEditing(false);
+          setEditingPerson(null);
+        }
+      }
+    } catch (error) {
+      console.error("Error saving person data:", error);
+    }
+  };
+  
+  // Function to handle canceling edit
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditingPerson(null);
+  };
+  
+  // Function to handle input changes
+  const handleInputChange = (key: string, value: string) => {
+    if (editingPerson) {
+      setEditingPerson({
+        ...editingPerson,
+        [key]: value
+      });
+    }
   };
   
   // Categorize person properties
-  const categorizeProperties = (person) => {
-    if (!person) return {};
+  const categorizeProperties = (person: Person): CategorizedData => {
+    if (!person) return {
+      personal: {},
+      professional: {},
+      family: {},
+      education: {},
+      other: {}
+    };
     
     // Define categories with normalized keys to prevent duplicates
     const categoryMappings = {
@@ -134,7 +278,7 @@ export default function PersonDetailsPage({ params }) {
     };
     
     // Initialize categorized data object
-    const categorized = {
+    const categorized: CategorizedData = {
       personal: {},
       professional: {},
       family: {},
@@ -143,7 +287,7 @@ export default function PersonDetailsPage({ params }) {
     };
     
     // Track which keys have been processed to avoid duplicates
-    const processedKeys = new Set();
+    const processedKeys = new Set<string>();
     
     // Categorize each property
     Object.entries(person).forEach(([key, value]) => {
@@ -151,15 +295,17 @@ export default function PersonDetailsPage({ params }) {
       if (key === 'id' || processedKeys.has(key.toLowerCase())) return;
       
       const keyLower = key.toLowerCase();
-      let foundCategory = null;
-      let normalizedKey = null;
+      let foundCategory: keyof CategorizedData | null = null;
+      let normalizedKey: string | null = null;
+      let foundVariations: string[] = [];
       
       // Find which category this key belongs to
       for (const [category, mappings] of Object.entries(categoryMappings)) {
         for (const [normalizedName, variations] of Object.entries(mappings)) {
           if (variations.includes(keyLower)) {
-            foundCategory = category;
+            foundCategory = category as keyof CategorizedData;
             normalizedKey = normalizedName;
+            foundVariations = variations;
             break;
           }
         }
@@ -173,25 +319,40 @@ export default function PersonDetailsPage({ params }) {
       }
       
       // Add to categorized data and mark as processed
-      categorized[foundCategory][normalizedKey] = value;
-      processedKeys.add(keyLower);
-      
-      // Also mark all variations as processed to prevent duplicates
-      if (foundCategory !== 'other') {
-        const categoryMapping = categoryMappings[foundCategory];
-        const variations = categoryMapping[normalizedKey];
-        variations.forEach(variation => processedKeys.add(variation));
+      if (normalizedKey) {
+        categorized[foundCategory][normalizedKey] = value;
+        processedKeys.add(keyLower);
+        
+        // Also mark all variations as processed to prevent duplicates
+        if (foundCategory !== 'other' && foundVariations.length > 0) {
+          foundVariations.forEach((variation: string) => processedKeys.add(variation));
+        }
       }
     });
     
     return categorized;
   };
   
-  // Show loading state
-  if (loading) {
+  // Show loading state while Clerk is loading
+  if (!isLoaded || loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00B24B] mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show message if user is not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Authentication Required</h2>
+          <p className="text-gray-600">Please sign in to view person details.</p>
+        </div>
       </div>
     );
   }
@@ -199,31 +360,25 @@ export default function PersonDetailsPage({ params }) {
   // Show error if person not found
   if (!person) {
     return (
-      <div className="container mx-auto max-w-4xl p-4">
-        <button 
-          onClick={handleGoBack}
-          className="mb-6 flex items-center text-green-500 hover:text-blue-800"
-        >
-          <ArrowLeft size={18} className="mr-1" />
-          Back to People List
-        </button>
-        <div className="bg-white rounded-lg shadow p-6 text-center">
-          <h1 className="text-2xl font-bold mb-4">Person Not Found</h1>
-          <p>The person you're looking for doesn't exist or has been deleted.</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center bg-white p-8 rounded-lg shadow-sm border border-gray-200">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Person Not Found</h2>
+          <p className="text-gray-600">The person you're looking for doesn't exist or has been deleted.</p>
         </div>
       </div>
     );
   }
   
-  // Categorize person data
-  const categorizedData = categorizeProperties(person);
+  // Use editingPerson data when in edit mode, otherwise use person data
+  const displayPerson = isEditing ? editingPerson : person;
+  const categorizedData = categorizeProperties(displayPerson || person);
   
   // Hide empty categories
   const nonEmptyCategories = Object.entries(categorizedData)
     .filter(([_, values]) => Object.keys(values).length > 0)
     .map(([category]) => category);
   
-  const getCategoryLabel = (category) => {
+  const getCategoryLabel = (category: string): string => {
     switch(category) {
       case 'personal': return 'Personal Information';
       case 'professional': return 'Professional Details';
@@ -234,22 +389,22 @@ export default function PersonDetailsPage({ params }) {
   };
   
   // Get icon for specific field
-  const getFieldIcon = (field) => {
+  const getFieldIcon = (field: string): React.ReactNode | null => {
     const fieldLower = field.toLowerCase();
-    if (fieldLower.includes('email')) return <Mail size={16} />;
-    if (fieldLower.includes('name')) return <User size={16} />;
-    if (fieldLower.includes('role') || fieldLower.includes('department')) return <Briefcase size={16} />;
-    if (fieldLower.includes('phone') || fieldLower.includes('contact')) return <Phone size={16} />;
-    if (fieldLower.includes('address')) return <MapPin size={16} />;
-    if (fieldLower.includes('date') || fieldLower.includes('birth')) return <Calendar size={16} />;
-    if (fieldLower.includes('family') || fieldLower.includes('parent') || fieldLower.includes('spouse')) return <Users size={16} />;
-    if (fieldLower.includes('company') || fieldLower.includes('department')) return <Building size={16} />;
+    if (fieldLower.includes('email')) return <Mail className="w-4 h-4 text-[#3FA1D8]" />;
+    if (fieldLower.includes('name')) return <User className="w-4 h-4 text-[#3FA1D8]" />;
+    if (fieldLower.includes('role') || fieldLower.includes('department')) return <Briefcase className="w-4 h-4 text-[#3FA1D8]" />;
+    if (fieldLower.includes('phone') || fieldLower.includes('contact')) return <Phone className="w-4 h-4 text-[#3FA1D8]" />;
+    if (fieldLower.includes('address')) return <MapPin className="w-4 h-4 text-[#3FA1D8]" />;
+    if (fieldLower.includes('date') || fieldLower.includes('birth')) return <Calendar className="w-4 h-4 text-[#3FA1D8]" />;
+    if (fieldLower.includes('family') || fieldLower.includes('parent') || fieldLower.includes('spouse')) return <Users className="w-4 h-4 text-[#3FA1D8]" />;
+    if (fieldLower.includes('company') || fieldLower.includes('department')) return <Building className="w-4 h-4 text-[#3FA1D8]" />;
     return null;
   };
   
   // Get display name for field
-  const getDisplayName = (key) => {
-    const displayNames = {
+  const getDisplayName = (key: string): string => {
+    const displayNames: Record<string, string> = {
       'name': 'Full Name',
       'email': 'Email Address',
       'phone': 'Phone Number',
@@ -279,75 +434,123 @@ export default function PersonDetailsPage({ params }) {
     return displayNames[key] || key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
   };
   
+  // Find the original key for a normalized key
+  const findOriginalKey = (normalizedKey: string, category: keyof CategorizedData): string => {
+    const originalPerson = isEditing ? person : displayPerson;
+    if (!originalPerson) return normalizedKey;
+    
+    // Look for the actual key in the original person object
+    const possibleKeys = Object.keys(originalPerson).filter(key => {
+      const keyLower = key.toLowerCase();
+      const normalizedLower = normalizedKey.toLowerCase();
+      return keyLower === normalizedLower || 
+             keyLower.replace(/\s+/g, '') === normalizedLower.replace(/\s+/g, '') ||
+             keyLower.includes(normalizedLower) ||
+             normalizedLower.includes(keyLower);
+    });
+    
+    return possibleKeys[0] || normalizedKey;
+  };
+  
   return (
-    <div className="container mx-auto max-w-4xl p-4">
-      {/* Back button */}
-      <button 
-        onClick={handleGoBack}
-        className="mb-6 flex items-center text-green-500 hover:text-blue-800"
-      >
-        <ArrowLeft size={18} className="mr-1" />
-        Back to People List
-      </button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Extended Breadcrumb Navigation */}
+      <ExtendedBreadcrumb person={person} onDashboardClick={handleGoBack} />
       
-      <div className="bg-white rounded-lg shadow p-6">
-        {/* Header with edit button */}
+      <div className="w-full mx-auto px-4 py-6">
+        {/* Header with edit/save/cancel buttons */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Person Details</h1>
-          <button 
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded flex items-center gap-1"
-            onClick={handleEditPerson}
-          >
-            <Edit size={16} />
-            Edit
-          </button>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isEditing ? 'Edit Person Details' : 'Person Details'}
+          </h1>
+          <div className="flex gap-2">
+            {isEditing ? (
+              <>
+                <button
+                  onClick={handleSaveEdit}
+                  className="inline-flex items-center px-4 py-2 bg-[#00B24B] text-white rounded-lg hover:bg-[#009640] transition-colors font-medium shadow-sm"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save
+                </button>
+                <button
+                  onClick={handleCancelEdit}
+                  className="inline-flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium shadow-sm"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleEditPerson}
+                className="inline-flex items-center px-4 py-2 bg-[#00B24B] text-white rounded-lg hover:bg-[#009640] transition-colors font-medium shadow-sm"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit
+              </button>
+            )}
+          </div>
         </div>
         
-        {/* Tabs */}
-        <TabsList>
-          {nonEmptyCategories.map(category => (
-            <TabsTrigger
-              key={category}
-              value={category}
-              active={activeTab === category}
-              onClick={setActiveTab}
-            >
-              {getCategoryLabel(category)}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-        
-        {/* Tab content */}
-        <div className="mt-4">
-          {nonEmptyCategories.map(category => (
-            <TabsContent key={category} value={category} activeTab={activeTab}>
-              <Card>
-                <CardContent>
-                  <ul className="space-y-4">
-                    {Object.entries(categorizedData[category]).map(([key, value]) => (
-                      <li key={key} className="flex items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center">
+        {/* Full width content area */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-[600px] flex flex-col">
+          {/* Tabs */}
+          <TabsList>
+            {nonEmptyCategories.map(category => (
+              <TabsTrigger
+                key={category}
+                value={category}
+                active={activeTab === category}
+                onClick={setActiveTab}
+              >
+                {getCategoryLabel(category)}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          
+          {/* Tab content */}
+          <div className="p-6 flex-1 overflow-auto">
+            {nonEmptyCategories.map(category => (
+              <TabsContent key={category} value={category} activeTab={activeTab}>
+                <div className="h-full">
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {Object.entries(categorizedData[category as keyof CategorizedData]).map(([key, value]) => {
+                      const originalKey = findOriginalKey(key, category as keyof CategorizedData);
+                      
+                      return (
+                        <div key={key} className="border border-gray-100 rounded-lg p-4 hover:border-[#00B24B] transition-colors h-fit">
+                          <div className="flex items-center gap-3 mb-2">
                             {getFieldIcon(key) && (
-                              <span className="text-green-500 mr-2">
+                              <div className="flex-shrink-0">
                                 {getFieldIcon(key)}
-                              </span>
+                              </div>
                             )}
-                            <h4 className="font-medium text-green-500">
+                            <h3 className="font-semibold text-gray-900 text-sm">
                               {getDisplayName(key)}
-                            </h4>
+                            </h3>
                           </div>
-                          <p className="text-gray-600 mt-1 ml-6">
-                            {value?.toString() || '-'}
-                          </p>
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editingPerson?.[originalKey]?.toString() || ''}
+                              onChange={(e) => handleInputChange(originalKey, e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00B24B] focus:border-transparent"
+                              placeholder={`Enter ${getDisplayName(key).toLowerCase()}`}
+                            />
+                          ) : (
+                            <p className="text-gray-700 break-words">
+                              {value?.toString() || '-'}
+                            </p>
+                          )}
                         </div>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          ))}
+                      );
+                    })}
+                  </div>
+                </div>
+              </TabsContent>
+            ))}
+          </div>
         </div>
       </div>
     </div>
