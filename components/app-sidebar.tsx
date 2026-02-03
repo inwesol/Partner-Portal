@@ -6,6 +6,7 @@ import {
   Frame,
   Map,
   PieChart,
+  Users,
 } from "lucide-react"
 
 import { NavProjects } from "@/components/nav-projects"
@@ -26,6 +27,11 @@ const data = {
       name: "Dashboard",
       url: "/dashboard",
       icon: Frame,
+    },
+    {
+      name: "Students",
+      url: "/students",
+      icon: Users,
     },
     
   ],

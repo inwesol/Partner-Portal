@@ -1,4 +1,5 @@
-import { AppSidebar } from "@/components/app-sidebar"
+"use client"
+
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -7,46 +8,68 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar"
-import PeopleListManager from "@/components/PeopleListManager"
+import { CheckCircle, GraduationCap, Phone, Users } from "lucide-react"
+import Link from "next/link"
+import { StatCard } from "@/components/dashboard/stat-card"
+import { SessionBreakdown } from "@/components/dashboard/session-breakdown"
+import { MonthlyProgressChart } from "@/components/dashboard/monthly-progress-chart"
+import { dashboardStats, monthlyProgressData } from "@/lib/data/mock-dashboard"
 
-export default function Page() {
+export default function Dashboard() {
   return (
-    <SidebarProvider>
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2">
-          <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumb>
-              <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Partner Portal
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
-                </BreadcrumbItem>
-              </BreadcrumbList>
-            </Breadcrumb>
-          </div>
-        </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-1">
-            <div className="aspect-video rounded-xl p-4 border border-gray-200 bg-white shadow-sm">
-              <PeopleListManager />
-            </div>
-          </div>
-          <div className="min-h-[100vh] flex-1 rounded-xl bg-muted/50 md:min-h-min" />
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+    <SidebarInset>
+      <header className="flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 h-4" />
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbPage>Dashboard</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </header>
+      <main className="flex-1 space-y-6 p-6">
+        {/* Stats Cards */}
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Registered Students"
+            value={dashboardStats.totalRegistered}
+            icon={Users}
+            className="bg-[#EFF6FF] border-blue-200"
+            iconClassName="text-blue-600"
+          />
+          <StatCard
+            title="Preliminary Call Completed"
+            value={dashboardStats.preliminaryCallCompleted}
+            icon={Phone}
+            className="bg-[#F0FDF4] border-green-200"
+            iconClassName="text-green-600"
+          />
+          <StatCard
+            title="Currently in Coaching"
+            value={dashboardStats.inCoaching}
+            icon={GraduationCap}
+            className="bg-[#F5F3FF] border-violet-200"
+            iconClassName="text-violet-600"
+          />
+          <StatCard
+            title="Completed Coaching"
+            value={dashboardStats.completedCoaching}
+            icon={CheckCircle}
+            className="bg-[#ECFDF5] border-emerald-200"
+            iconClassName="text-emerald-600"
+          />
+        </section>
+
+        {/* Session Breakdown */}
+        <SessionBreakdown sessionBreakdown={dashboardStats.sessionBreakdown} />
+
+        {/* Monthly Progress Chart */}
+        <MonthlyProgressChart data={monthlyProgressData} />
+      </main>
+    </SidebarInset>
   )
 }
