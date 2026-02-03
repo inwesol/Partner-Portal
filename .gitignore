@@ -39,3 +39,6 @@ next-env.d.ts
 /.clerk/
 
 .env.local
+
+# cursor docs
+/cursor-doc
