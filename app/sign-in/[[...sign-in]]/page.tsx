@@ -14,13 +14,13 @@ export default function LoginPage() {
   }, [isLoaded])
   
   return (
-    <div className="min-h-screen flex">
-      {/* Left side - Illustration */}
-      <div className="w-1/2 bg-white relative overflow-hidden flex flex-col justify-center items-center p-12">
+    <div className="w-full min-w-0 min-h-[100dvh] flex flex-col md:flex-row overflow-x-hidden">
+      {/* Left side - Illustration (hidden on xs, stacked on sm, side-by-side on md+) */}
+      <div className="w-full md:w-1/2 bg-white relative overflow-hidden flex flex-col justify-center items-center p-6 sm:p-8 md:p-12 order-2 md:order-1 min-h-[40vh] sm:min-h-[45vh] md:min-h-0">
         <div className="absolute inset-0 bg-white" />
         
         {/* Storyset Illustration */}
-        <div className="relative z-10 mb-8 w-full max-w-md">
+        <div className="relative z-10 mb-4 sm:mb-6 md:mb-8 w-full max-w-[280px] sm:max-w-sm md:max-w-md">
           <img 
             src="/signin.svg" 
             alt="Login illustration"
@@ -28,18 +28,18 @@ export default function LoginPage() {
           />
         </div>
         
-        {/* Decorative elements */}
-        <div className="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl" />
-        <div className="absolute bottom-10 right-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
-        <div className="absolute top-1/3 right-8 w-16 h-16 bg-white/5 rounded-full blur-lg" />
+        {/* Decorative elements - hidden on small screens for cleaner look */}
+        <div className="absolute top-10 left-10 w-24 h-24 bg-white/10 rounded-full blur-xl hidden md:block" />
+        <div className="absolute bottom-10 right-10 w-32 h-32 bg-white/10 rounded-full blur-xl hidden md:block" />
+        <div className="absolute top-1/3 right-8 w-16 h-16 bg-white/5 rounded-full blur-lg hidden md:block" />
       </div>
       
       {/* Right side - Login Form */}
-      <div className="w-1/2 flex items-center justify-center p-12 bg-white">
+      <div className="w-full md:w-1/2 flex items-center justify-center p-4 sm:p-6 md:p-12 py-6 sm:py-8 md:py-12 bg-white order-1 md:order-2 min-h-[60vh] sm:min-h-[55vh] md:min-h-screen overflow-y-auto">
         <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Partner Login</h2>
-            <p className="text-gray-600 text-lg">Enter your provided credentials</p>
+          <div className="text-center mb-6 sm:mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-3">Partner Login</h2>
+            <p className="text-gray-600 text-base sm:text-lg">Enter your provided credentials</p>
           </div>
           
           {/* Show placeholder while Clerk is loading */}
